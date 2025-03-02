@@ -7,7 +7,7 @@ import ModelGallery, { Model } from '@/components/ModelGallery';
 import { saveModel, getSampleModels } from '@/utils/modelUtils';
 import { useToast } from "@/hooks/use-toast";
 import { generateCharacterImage, generateCharacterModel, ModelGenerationResponse } from '@/services/characterAPI';
-import { Sparkles, ArrowRight, Cube } from 'lucide-react';
+import { Sparkles, ArrowRight, Cuboid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
