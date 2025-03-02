@@ -1,18 +1,18 @@
 
 import { Model } from '@/components/ModelGallery';
+import { ModelGenerationResponse } from '@/services/characterAPI';
 
-// Simulates a call to an AI service to generate a 3D model
-export const generateModel = async (prompt: string): Promise<string> => {
-  // In a real app, this would be an API call to a model generation service
-  console.log(`Generating model for prompt: ${prompt}`);
-  
-  // Simulate API delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Return a placeholder image URL for demo purposes
-      resolve('https://images.unsplash.com/photo-1623479322729-28b25c16b011?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8M2QlMjByZW5kZXJ8ZW58MHx8MHx8fDA%3D');
-    }, 3000);
-  });
+// Save a 3D model to the user's collection
+export const saveModel = (name: string, imageUrl: string, modelData: ModelGenerationResponse): Model => {
+  // In a real app, this would be an API call to save the model
+  return {
+    id: Math.random().toString(36).substring(2, 9), // Generate a random ID
+    name: name.length > 30 ? name.substring(0, 30) + '...' : name,
+    thumbnail: imageUrl, // We use the character image as the thumbnail
+    createdAt: new Date(),
+    modelUrl: modelData.model_url,
+    viewerUrl: modelData.viewer_url
+  };
 };
 
 // Sample model data for demonstration
@@ -37,15 +37,4 @@ export const getSampleModels = (): Model[] => {
       createdAt: new Date(Date.now() - 86400000 * 7), // 7 days ago
     },
   ];
-};
-
-// Simulate saving a new model to the user's collection
-export const saveModel = (prompt: string, imageUrl: string): Model => {
-  // In a real app, this would be an API call to save the model
-  return {
-    id: Math.random().toString(36).substring(2, 9), // Generate a random ID
-    name: prompt.length > 30 ? prompt.substring(0, 30) + '...' : prompt,
-    thumbnail: imageUrl,
-    createdAt: new Date(),
-  };
 };

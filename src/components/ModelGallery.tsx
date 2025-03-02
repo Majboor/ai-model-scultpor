@@ -1,13 +1,15 @@
 
 import React from 'react';
 import ModelCard from './ModelCard';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Model {
   id: string;
   name: string;
   thumbnail: string;
   createdAt: Date;
+  modelUrl?: string;
+  viewerUrl?: string;
 }
 
 interface ModelGalleryProps {
