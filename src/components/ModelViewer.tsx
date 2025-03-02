@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import ModelControls from './ModelControls';
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +13,14 @@ interface ModelViewerProps {
   isGeneratingModel: boolean;
   onRegenerateImage?: () => void;
   onCreateModel?: () => void;
+  viewerUrl?: string; // Add viewer URL prop
 }
+
+// Helper function to ensure URLs use HTTPS
+const ensureHttps = (url?: string): string | undefined => {
+  if (!url) return undefined;
+  return url.replace('http://', 'https://');
+};
 
 const ModelViewer: React.FC<ModelViewerProps> = ({ 
   modelUrl, 
@@ -21,7 +29,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
   isGeneratingImage,
   isGeneratingModel,
   onRegenerateImage,
-  onCreateModel
+  onCreateModel,
+  viewerUrl
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -92,7 +101,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
           <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
             <div className="max-h-full w-auto flex items-center justify-center">
               <img 
-                src={imageUrl} 
+                src={ensureHttps(imageUrl)} 
                 alt="Generated Character" 
                 className="max-w-full max-h-[320px] object-contain shadow-md rounded-lg" 
               />
@@ -122,18 +131,24 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     );
   }
   
+  // Use the iframe for the 3D model viewer when viewerUrl is available
   return (
     <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
-      <div ref={canvasRef} className="model-canvas">
-        {/* In a real app, this is where you would render the 3D model */}
-        <div className="w-full h-full flex items-center justify-center">
-          <img 
-            src={modelUrl} 
-            alt="3D Model Preview" 
-            className="max-w-full max-h-full object-contain"
-          />
+      {viewerUrl ? (
+        <iframe 
+          src={ensureHttps(viewerUrl)} 
+          className="w-full h-full border-none" 
+          title="3D Model Viewer"
+          allow="accelerometer; autoplay; camera; fullscreen; gyroscope; magnetometer"
+          loading="lazy"
+        ></iframe>
+      ) : (
+        <div ref={canvasRef} className="model-canvas w-full h-full">
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-muted-foreground">No model viewer URL available</p>
+          </div>
         </div>
-      </div>
+      )}
       
       <ModelControls
         onRotate={handleRotate}

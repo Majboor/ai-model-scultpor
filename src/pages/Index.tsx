@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
@@ -21,6 +20,7 @@ const Index = () => {
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
   const [currentModelData, setCurrentModelData] = useState<ModelGenerationResponse | undefined>(undefined);
   const [models, setModels] = useState<Model[]>(getSampleModels());
+  const [viewerUrl, setViewerUrl] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   // Step 1: Generate character image
@@ -67,6 +67,7 @@ const Index = () => {
       const modelData = await generateCharacterModel(generatedImageUrl);
       setCurrentModelData(modelData);
       setCurrentModel(modelData.model_url);
+      setViewerUrl(modelData.viewer_url);
       
       // Save the generated model to the user's collection
       const newModel = saveModel(characterName, generatedImageUrl, modelData);
@@ -106,6 +107,7 @@ const Index = () => {
     if (model) {
       setCurrentModel(model.modelUrl);
       setGeneratedImageUrl(model.thumbnail);
+      setViewerUrl(model.viewerUrl);
       
       toast({
         title: model.name,
@@ -171,6 +173,7 @@ const Index = () => {
           <ModelViewer 
             modelUrl={currentModel} 
             imageUrl={generatedImageUrl}
+            viewerUrl={viewerUrl}
             isLoading={false}
             isGeneratingImage={isGeneratingImage}
             isGeneratingModel={isGeneratingModel}
