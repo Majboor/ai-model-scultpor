@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Model } from '@/components/ModelGallery';
 
 // Helper function to ensure URLs use HTTPS
-const ensureHttps = (url: string): string => {
+export const ensureHttps = (url: string): string => {
   return url.replace('http://', 'https://');
 };
 
@@ -35,7 +35,7 @@ export const getSampleModels = (): Model[] => {
       name: 'Robo Fighter',
       thumbnail: 'https://i.ibb.co/nj8Yy08/robot-character.png',
       modelUrl: 'https://i.ibb.co/nj8Yy08/robot-character.png',
-      viewerUrl: 'https://model-viewer.glitch.me/', // Add sample viewer URL
+      viewerUrl: 'https://model-viewer.glitch.me/',
       createdAt: new Date('2023-05-15'),
     },
     {
@@ -43,7 +43,7 @@ export const getSampleModels = (): Model[] => {
       name: 'Fantasy Wizard',
       thumbnail: 'https://i.ibb.co/Qvs67Gd/wizard-character.png',
       modelUrl: 'https://i.ibb.co/Qvs67Gd/wizard-character.png',
-      viewerUrl: 'https://model-viewer.glitch.me/', // Add sample viewer URL
+      viewerUrl: 'https://model-viewer.glitch.me/',
       createdAt: new Date('2023-05-10'),
     },
     {
@@ -51,7 +51,7 @@ export const getSampleModels = (): Model[] => {
       name: 'Space Explorer',
       thumbnail: 'https://i.ibb.co/G3jr2V4/astronaut-character.png',
       modelUrl: 'https://i.ibb.co/G3jr2V4/astronaut-character.png',
-      viewerUrl: 'https://model-viewer.glitch.me/', // Add sample viewer URL
+      viewerUrl: 'https://model-viewer.glitch.me/',
       createdAt: new Date('2023-05-05'),
     },
   ];

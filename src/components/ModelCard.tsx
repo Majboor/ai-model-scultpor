@@ -2,9 +2,16 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { 
-  Download, Trash, Edit
+  Download, Trash, Edit, ExternalLink
 } from "lucide-react";
 import { Model } from './ModelGallery';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 interface ModelCardProps {
   model: Model;
@@ -19,6 +26,41 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onDelete,
   onEdit
 }) => {
+  const { toast } = useToast();
+
+  // Ensure model URL uses HTTPS
+  const secureModelUrl = model.modelUrl ? model.modelUrl.replace('http://', 'https://') : '';
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Show toast with link
+    toast({
+      title: "Download Started",
+      description: (
+        <div className="mt-2">
+          <p className="mb-2">Model URL:</p>
+          <a 
+            href={secureModelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline flex items-center text-xs break-all"
+          >
+            {secureModelUrl} <ExternalLink className="h-3 w-3 ml-1" />
+          </a>
+        </div>
+      ),
+    });
+
+    // Start download
+    const link = document.createElement('a');
+    link.href = secureModelUrl;
+    link.setAttribute('download', `${model.name}.glb`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div 
       className="glass-card rounded-xl overflow-hidden clickable cursor-pointer animate-scale-in"
@@ -73,18 +115,25 @@ const ModelCard: React.FC<ModelCardProps> = ({
         </p>
         
         <div className="mt-3 flex justify-between">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs py-1 h-7"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Download logic
-            }}
-          >
-            <Download className="h-3 w-3 mr-1" />
-            Download
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs py-1 h-7"
+                  onClick={handleDownload}
+                  disabled={!model.modelUrl}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Download
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download 3D Model</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </div>

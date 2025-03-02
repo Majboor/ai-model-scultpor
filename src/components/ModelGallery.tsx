@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ModelCard from './ModelCard';
 
@@ -6,16 +7,23 @@ export interface Model {
   name: string;
   thumbnail: string;
   modelUrl: string;
-  viewerUrl?: string; // Add viewerUrl property
+  viewerUrl?: string;
   createdAt: Date;
 }
 
 interface ModelGalleryProps {
   models: Model[];
   onSelectModel: (id: string) => void;
+  onDeleteModel?: (id: string) => void;
+  onEditModel?: (id: string) => void;
 }
 
-const ModelGallery: React.FC<ModelGalleryProps> = ({ models, onSelectModel }) => {
+const ModelGallery: React.FC<ModelGalleryProps> = ({ 
+  models, 
+  onSelectModel,
+  onDeleteModel,
+  onEditModel
+}) => {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Your Collection</h2>
@@ -25,6 +33,8 @@ const ModelGallery: React.FC<ModelGalleryProps> = ({ models, onSelectModel }) =>
             key={model.id}
             model={model}
             onSelect={() => onSelectModel(model.id)}
+            onDelete={onDeleteModel}
+            onEdit={onEditModel}
           />
         ))}
       </div>
