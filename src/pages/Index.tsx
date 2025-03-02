@@ -7,6 +7,8 @@ import ModelGallery, { Model } from '@/components/ModelGallery';
 import { saveModel, getSampleModels } from '@/utils/modelUtils';
 import { useToast } from "@/hooks/use-toast";
 import { generateCharacterImage, generateCharacterModel, ModelGenerationResponse } from '@/services/characterAPI';
+import { Sparkles, ArrowRight, Cube } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   // State for API steps
@@ -117,6 +119,49 @@ const Index = () => {
       <Header />
       
       <main className="page-container">
+        {/* Hero Section */}
+        <div className="py-10 sm:py-16 mb-8 animate-fade-in">
+          <div className="glass-card rounded-3xl overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm p-8 sm:p-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-6">
+                  <div className="inline-block px-4 py-1 bg-primary/10 backdrop-blur-sm rounded-full text-primary font-medium text-sm mb-2">
+                    <Sparkles className="h-4 w-4 inline-block mr-2" />
+                    AI-Powered 3D Character Generation
+                  </div>
+                  <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+                    <span className="text-gradient">Create amazing</span><br />
+                    3D characters instantly
+                  </h1>
+                  <p className="text-lg text-muted-foreground">
+                    Transform your ideas into stunning 3D models with just a few clicks.
+                    No design skills required!
+                  </p>
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    <Button size="lg" className="bg-primary text-white hover:bg-primary/90 clickable">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <Button size="lg" variant="outline" className="glass-button clickable">
+                      Learn More
+                    </Button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl animate-pulse-subtle"></div>
+                  <div className="relative rounded-xl overflow-hidden bg-black/5 backdrop-blur-sm border border-white/10">
+                    <img 
+                      src="https://i.ibb.co/gTDZZT8/hero-character.png" 
+                      alt="Example 3D Character" 
+                      className="w-full h-auto object-cover"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-6">
           <PromptInput 
             onGenerate={handleGenerateImage} 
