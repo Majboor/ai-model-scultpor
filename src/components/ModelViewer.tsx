@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ModelControls from './ModelControls';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from './ui/button';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, Cube } from 'lucide-react';
 
 interface ModelViewerProps {
   modelUrl?: string;
@@ -93,18 +93,21 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     return (
       <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
         <div className="w-full h-full bg-gray-100 flex flex-col">
-          <div className="flex-1 flex items-center justify-center p-4">
-            <img 
-              src={imageUrl} 
-              alt="Generated Character" 
-              className="max-w-full max-h-full object-contain shadow-md rounded-lg" 
-            />
+          <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+            <div className="max-h-full w-auto flex items-center justify-center">
+              <img 
+                src={imageUrl} 
+                alt="Generated Character" 
+                className="max-w-full max-h-[320px] object-contain shadow-md rounded-lg" 
+              />
+            </div>
           </div>
           <div className="p-4 flex justify-between bg-secondary/10 backdrop-blur-sm">
             <Button 
               variant="outline" 
               onClick={onRegenerateImage}
               className="glass-button"
+              disabled={!onRegenerateImage}
             >
               <RefreshCcw className="h-4 w-4 mr-2" />
               Regenerate Image
@@ -112,7 +115,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
             <Button 
               onClick={onCreateModel}
               className="bg-primary text-white hover:bg-primary/90"
+              disabled={!onCreateModel}
             >
+              <Cube className="h-4 w-4 mr-2" />
               Create 3D Model
             </Button>
           </div>
