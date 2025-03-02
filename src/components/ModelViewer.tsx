@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ModelControls from './ModelControls';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from './ui/button';
-import { RefreshCcw, Cube3d } from 'lucide-react';
+import { RefreshCcw, Cuboid } from 'lucide-react';
 
 interface ModelViewerProps {
   modelUrl?: string;
@@ -48,7 +48,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     // In a real app, you would download the model
   };
   
-  // Loading state display
   if (isLoading || isGeneratingImage || isGeneratingModel) {
     return (
       <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
@@ -69,7 +68,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     );
   }
   
-  // Initial state (no image or model)
   if (!imageUrl && !modelUrl) {
     return (
       <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
@@ -87,7 +85,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     );
   }
   
-  // Image generated but no model yet
   if (imageUrl && !modelUrl) {
     return (
       <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
@@ -116,7 +113,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
               className="bg-primary text-white hover:bg-primary/90"
               disabled={!onCreateModel}
             >
-              <Cube3d className="h-4 w-4 mr-2" />
+              <Cuboid className="h-4 w-4 mr-2" />
               Create 3D Model
             </Button>
           </div>
@@ -125,7 +122,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     );
   }
   
-  // Model generated
   return (
     <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
       <div ref={canvasRef} className="model-canvas">
