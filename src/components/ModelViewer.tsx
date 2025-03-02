@@ -4,6 +4,7 @@ import ModelControls from './ModelControls';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from './ui/button';
 import { RefreshCcw, Cuboid } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ModelViewerProps {
   modelUrl?: string;
@@ -13,7 +14,7 @@ interface ModelViewerProps {
   isGeneratingModel: boolean;
   onRegenerateImage?: () => void;
   onCreateModel?: () => void;
-  viewerUrl?: string; // Add viewer URL prop
+  viewerUrl?: string;
 }
 
 // Helper function to ensure URLs use HTTPS
@@ -35,6 +36,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
   const canvasRef = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const handleZoomChange = (value: number) => {
     setZoomLevel(value);
@@ -50,11 +52,22 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
   };
   
   const handleDownload = () => {
+    if (!modelUrl) return;
+
+    const secureModelUrl = ensureHttps(modelUrl);
+    
     toast({
       title: "Downloading model",
-      description: "Your model will be downloaded as a .glb file.",
+      description: `Model URL: ${secureModelUrl}`,
     });
-    // In a real app, you would download the model
+    
+    // Create a temporary link to download the file
+    const link = document.createElement('a');
+    link.href = secureModelUrl || '';
+    link.download = 'character_model.glb';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
   if (isLoading || isGeneratingImage || isGeneratingModel) {
@@ -135,18 +148,31 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
   return (
     <div className="relative w-full h-[400px] sm:h-[500px] rounded-2xl overflow-hidden animate-fade-in">
       {viewerUrl ? (
-        <iframe 
-          src={ensureHttps(viewerUrl)} 
-          className="w-full h-full border-none" 
-          title="3D Model Viewer"
-          allow="accelerometer; autoplay; camera; fullscreen; gyroscope; magnetometer"
-          loading="lazy"
-        ></iframe>
+        <div className="w-full h-full relative">
+          <iframe 
+            src={ensureHttps(viewerUrl)} 
+            className="w-full h-full border-none" 
+            title="3D Model Viewer"
+            allow="accelerometer; autoplay; camera; fullscreen; gyroscope; magnetometer"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin"
+          ></iframe>
+          {isMobile && (
+            <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-md p-1">
+              <p className="text-xs text-foreground">Tap and drag to rotate model</p>
+            </div>
+          )}
+        </div>
       ) : (
-        <div ref={canvasRef} className="model-canvas w-full h-full">
-          <div className="w-full h-full flex items-center justify-center">
+        <div ref={canvasRef} className="model-canvas w-full h-full flex items-center justify-center">
+          {modelUrl ? (
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <p className="text-muted-foreground">Model available but no viewer URL provided</p>
+              <Button variant="outline" onClick={handleDownload}>Download Model</Button>
+            </div>
+          ) : (
             <p className="text-muted-foreground">No model viewer URL available</p>
-          </div>
+          )}
         </div>
       )}
       
