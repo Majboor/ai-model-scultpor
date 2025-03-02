@@ -1,9 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import ModelControls from './ModelControls';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from './ui/button';
-import { RefreshCcw, Cube } from 'lucide-react';
+import { RefreshCcw, Cube3d } from 'lucide-react';
 
 interface ModelViewerProps {
   modelUrl?: string;
@@ -117,7 +116,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
               className="bg-primary text-white hover:bg-primary/90"
               disabled={!onCreateModel}
             >
-              <Cube className="h-4 w-4 mr-2" />
+              <Cube3d className="h-4 w-4 mr-2" />
               Create 3D Model
             </Button>
           </div>
