@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
@@ -9,7 +8,13 @@ import SubscriptionModal from '@/components/SubscriptionModal';
 import { saveModel, getSampleModels } from '@/utils/modelUtils';
 import { useToast } from "@/hooks/use-toast";
 import { generateCharacterImage, generateCharacterModel, ModelGenerationResponse } from '@/services/characterAPI';
-import { createPayment, PaymentResponse } from '@/services/paymentAPI';
+import { 
+  createPayment, 
+  PaymentResponse, 
+  checkSubscriptionStatus, 
+  hasUsedFreeTrial, 
+  recordFreeTrialUsage 
+} from '@/services/paymentAPI';
 import { Sparkles, ArrowRight, Cuboid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -33,7 +38,7 @@ const Index = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
 
-  // Load saved usage count from localStorage
+  // Load saved usage count from localStorage on initial render
   useEffect(() => {
     const savedUsageCount = localStorage.getItem('usageCount');
     if (savedUsageCount) {
@@ -41,15 +46,10 @@ const Index = () => {
     }
   }, []);
 
-  // Check if user is subscribed
-  const isSubscribed = () => {
-    return localStorage.getItem('isSubscribed') === 'true';
-  };
-
   // Step 1: Generate character image
   const handleGenerateImage = async (name: string, description: string, color: string) => {
     // Check if user has reached the free limit and is not subscribed
-    if (usageCount >= 1 && !isSubscribed()) {
+    if (hasUsedFreeTrial() && !checkSubscriptionStatus()) {
       setIsSubscriptionModalOpen(true);
       return;
     }
@@ -64,10 +64,9 @@ const Index = () => {
       setGeneratedImageUrl(imageData.image_url);
       
       // Increment usage count for non-subscribed users
-      if (!isSubscribed()) {
-        const newCount = usageCount + 1;
+      if (!checkSubscriptionStatus()) {
+        const newCount = recordFreeTrialUsage();
         setUsageCount(newCount);
-        localStorage.setItem('usageCount', newCount.toString());
       }
       
       toast({
@@ -166,8 +165,7 @@ const Index = () => {
       const paymentData = await createPayment(amountInAEDCents);
       setPaymentLink(paymentData.payment_link);
       
-      // In a real application, you would handle the payment verification
-      // For now, we'll simulate subscription when they click the payment link
+      // Store the payment reference for verification
       localStorage.setItem('pendingPaymentReference', paymentData.reference);
       
       toast({

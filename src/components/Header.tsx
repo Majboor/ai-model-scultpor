@@ -2,12 +2,16 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Download, Settings, Share2, CreditCard } from "lucide-react";
+import { hasUsedFreeTrial, checkSubscriptionStatus } from '@/services/paymentAPI';
 
 interface HeaderProps {
   onPricingClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
+  const hasUnlockedPro = checkSubscriptionStatus();
+  const needsSubscription = hasUsedFreeTrial() && !hasUnlockedPro;
+  
   return (
     <header className="w-full py-4 px-6 flex items-center justify-between border-b border-border animate-fade-in">
       <div className="flex items-center gap-3">
@@ -21,13 +25,14 @@ const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
 
       <div className="flex items-center gap-3">
         <Button 
-          variant="outline" 
+          variant={needsSubscription ? "default" : "outline"}
           size="sm" 
-          className="glass-button"
+          className={needsSubscription ? "bg-primary text-white hover:bg-primary/90" : "glass-button"}
           onClick={onPricingClick}
         >
           <CreditCard className="h-4 w-4 mr-2" />
-          Pricing
+          {hasUnlockedPro ? "Subscribed" : "Pricing"}
+          {needsSubscription && <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">1/1</span>}
         </Button>
         <Button variant="outline" size="sm" className="glass-button">
           <Download className="h-4 w-4 mr-2" />
