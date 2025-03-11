@@ -1,9 +1,13 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Download, Settings, Share2 } from "lucide-react";
+import { Download, Settings, Share2, CreditCard } from "lucide-react";
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onPricingClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
   return (
     <header className="w-full py-4 px-6 flex items-center justify-between border-b border-border animate-fade-in">
       <div className="flex items-center gap-3">
@@ -16,6 +20,15 @@ const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-3">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="glass-button"
+          onClick={onPricingClick}
+        >
+          <CreditCard className="h-4 w-4 mr-2" />
+          Pricing
+        </Button>
         <Button variant="outline" size="sm" className="glass-button">
           <Download className="h-4 w-4 mr-2" />
           Export
