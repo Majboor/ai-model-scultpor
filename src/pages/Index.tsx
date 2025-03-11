@@ -157,12 +157,7 @@ const Index = () => {
     setPaymentLink(null);
     
     try {
-      // 14 USD in AED (approximately 51.41 AED)
-      const amountInUSD = 14;
-      const amountInAED = Math.round(amountInUSD * 3.6725 * 100) / 100;
-      const amountInAEDCents = Math.round(amountInAED * 100);
-      
-      const paymentData = await createPayment(amountInAEDCents);
+      const paymentData = await createPayment();
       setPaymentLink(paymentData.payment_link);
       
       // Store the payment reference for verification

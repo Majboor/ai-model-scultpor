@@ -19,8 +19,11 @@ export interface PaymentResponse {
 /**
  * Create a payment for subscription
  */
-export const createPayment = async (amount: number): Promise<PaymentResponse> => {
+export const createPayment = async (): Promise<PaymentResponse> => {
   try {
+    // Fixed amount of 5141 (51.41 AED)
+    const amount = 5141;
+    
     const response = await fetch('https://pay.techrealm.pk/create-payment', {
       method: 'POST',
       headers: {
