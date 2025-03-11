@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
@@ -158,10 +159,10 @@ const Index = () => {
     
     try {
       const paymentData = await createPayment();
-      setPaymentLink(paymentData.payment_link);
+      setPaymentLink(paymentData.payment_url); // Changed from payment_link to payment_url
       
       // Store the payment reference for verification
-      localStorage.setItem('pendingPaymentReference', paymentData.reference);
+      localStorage.setItem('pendingPaymentReference', paymentData.special_reference); // Changed from reference to special_reference
       
       toast({
         title: "Payment processing",

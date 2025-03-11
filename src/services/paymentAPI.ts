@@ -12,8 +12,8 @@ interface CreatePaymentRequest {
  * Interface for payment response
  */
 export interface PaymentResponse {
-  payment_link: string;
-  reference: string;
+  payment_url: string;  // Changed from payment_link to payment_url
+  special_reference: string;  // Changed from reference to special_reference
 }
 
 /**
