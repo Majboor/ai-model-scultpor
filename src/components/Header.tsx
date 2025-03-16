@@ -1,16 +1,17 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Download, Settings, Share2, CreditCard } from "lucide-react";
-import { hasUsedFreeTrial, checkSubscriptionStatus } from '@/services/paymentAPI';
+import { Download, Settings, Share2, CreditCard, LogIn, LogOut, User } from "lucide-react";
+import { useAuth } from '@/context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   onPricingClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
-  const hasUnlockedPro = checkSubscriptionStatus();
-  const needsSubscription = hasUsedFreeTrial() && !hasUnlockedPro;
+  const { user, isSubscribed, signOut } = useAuth();
+  const needsSubscription = !isSubscribed && user;
   
   return (
     <header className="w-full py-4 px-6 flex items-center justify-between border-b border-border animate-fade-in">
@@ -24,27 +25,42 @@ const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button 
-          variant={needsSubscription ? "default" : "outline"}
-          size="sm" 
-          className={needsSubscription ? "bg-primary text-white hover:bg-primary/90" : "glass-button"}
-          onClick={onPricingClick}
-        >
-          <CreditCard className="h-4 w-4 mr-2" />
-          {hasUnlockedPro ? "Subscribed" : "Pricing"}
-          {needsSubscription && <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">1/1</span>}
-        </Button>
-        <Button variant="outline" size="sm" className="glass-button">
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
-        <Button variant="outline" size="sm" className="glass-button">
-          <Share2 className="h-4 w-4 mr-2" />
-          Share
-        </Button>
-        <Button variant="outline" size="sm" className="glass-button rounded-full p-2">
-          <Settings className="h-4 w-4" />
-        </Button>
+        {user ? (
+          <>
+            <Button 
+              variant={needsSubscription ? "default" : "outline"}
+              size="sm" 
+              className={needsSubscription ? "bg-primary text-white hover:bg-primary/90" : "glass-button"}
+              onClick={onPricingClick}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              {isSubscribed ? "Subscribed" : "Pricing"}
+              {needsSubscription && <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">1/1</span>}
+            </Button>
+            <Button variant="outline" size="sm" className="glass-button">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button variant="outline" size="sm" className="glass-button">
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+            <Button variant="outline" size="sm" className="glass-button rounded-full p-2">
+              <User className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="glass-button" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </>
+        ) : (
+          <Link to="/auth">
+            <Button variant="outline" size="sm" className="glass-button">
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+          </Link>
+        )}
       </div>
     </header>
   );

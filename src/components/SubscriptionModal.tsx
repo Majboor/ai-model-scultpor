@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles, LogIn } from "lucide-react";
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { verifyPayment } from '@/services/paymentAPI';
+import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -26,6 +30,61 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   isProcessing,
   onSubscribe
 }) => {
+  const { user, isSubscribed, checkSubscription } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // Check for payment callback in URL when component mounts
+  useEffect(() => {
+    const handlePaymentCallback = async () => {
+      if (!user) return;
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const success = urlParams.get('success');
+      const txnResponseCode = urlParams.get('txn_response_code');
+      
+      if (success === 'true' && txnResponseCode === 'APPROVED') {
+        setIsVerifying(true);
+        
+        try {
+          // Verify the payment and update subscription status
+          const verified = await verifyPayment(window.location.href, user.id);
+          
+          if (verified) {
+            // Update subscription status
+            await checkSubscription();
+            
+            toast({
+              title: "Subscription Activated",
+              description: "Thank you! Your subscription has been activated successfully.",
+            });
+            
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            toast({
+              title: "Verification Failed",
+              description: "Could not verify your payment. Please contact support.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Payment verification error:", error);
+          toast({
+            title: "Verification Error",
+            description: "An error occurred while verifying your payment.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsVerifying(false);
+        }
+      }
+    };
+    
+    handlePaymentCallback();
+  }, [user, checkSubscription, toast]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -65,7 +124,30 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         </div>
         
         <DialogFooter className="sm:justify-start">
-          {paymentLink ? (
+          {!user ? (
+            <div className="w-full">
+              <Button 
+                className="w-full mb-2"
+                onClick={() => {
+                  onClose();
+                  navigate('/auth');
+                }}
+              >
+                Sign in to continue
+                <LogIn className="ml-2 h-4 w-4" />
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                You need to be signed in to subscribe
+              </p>
+            </div>
+          ) : isVerifying ? (
+            <Button 
+              className="w-full" 
+              disabled={true}
+            >
+              Verifying payment...
+            </Button>
+          ) : paymentLink ? (
             <div className="w-full">
               <Button 
                 className="w-full mb-2" 

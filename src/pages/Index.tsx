@@ -12,12 +12,12 @@ import { generateCharacterImage, generateCharacterModel, ModelGenerationResponse
 import { 
   createPayment, 
   PaymentResponse, 
-  checkSubscriptionStatus, 
   hasUsedFreeTrial, 
   recordFreeTrialUsage 
 } from '@/services/paymentAPI';
 import { Sparkles, ArrowRight, Cuboid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
   // State for API steps
@@ -38,6 +38,9 @@ const Index = () => {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  
+  // Authentication context
+  const { user, isSubscribed, checkSubscription } = useAuth();
 
   // Load saved usage count from localStorage on initial render
   useEffect(() => {
@@ -45,12 +48,17 @@ const Index = () => {
     if (savedUsageCount) {
       setUsageCount(parseInt(savedUsageCount, 10));
     }
-  }, []);
+    
+    // Check for subscription in auth context
+    if (user) {
+      checkSubscription();
+    }
+  }, [user, checkSubscription]);
 
   // Step 1: Generate character image
   const handleGenerateImage = async (name: string, description: string, color: string) => {
     // Check if user has reached the free limit and is not subscribed
-    if (hasUsedFreeTrial() && !checkSubscriptionStatus()) {
+    if (!isSubscribed && hasUsedFreeTrial()) {
       setIsSubscriptionModalOpen(true);
       return;
     }
@@ -65,7 +73,7 @@ const Index = () => {
       setGeneratedImageUrl(imageData.image_url);
       
       // Increment usage count for non-subscribed users
-      if (!checkSubscriptionStatus()) {
+      if (!isSubscribed) {
         const newCount = recordFreeTrialUsage();
         setUsageCount(newCount);
       }
@@ -154,15 +162,21 @@ const Index = () => {
 
   // Handle subscription process
   const handleSubscribe = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to subscribe.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsProcessingPayment(true);
     setPaymentLink(null);
     
     try {
       const paymentData = await createPayment();
-      setPaymentLink(paymentData.payment_url); // Changed from payment_link to payment_url
-      
-      // Store the payment reference for verification
-      localStorage.setItem('pendingPaymentReference', paymentData.special_reference); // Changed from reference to special_reference
+      setPaymentLink(paymentData.payment_url);
       
       toast({
         title: "Payment processing",

@@ -1,4 +1,6 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 // Payment API service
 
 /**
@@ -6,6 +8,7 @@
  */
 interface CreatePaymentRequest {
   amount: number;
+  redirection_url?: string;
 }
 
 /**
@@ -46,10 +49,59 @@ export const createPayment = async (): Promise<PaymentResponse> => {
 };
 
 /**
+ * Verify payment and update subscription status
+ */
+export const verifyPayment = async (paymentUrl: string, userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('verify-payment', {
+      body: { paymentUrl, userId }
+    });
+
+    if (error) {
+      console.error('Error verifying payment:', error);
+      return false;
+    }
+
+    return data.success === true;
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    return false;
+  }
+};
+
+/**
  * Check if the user has a subscription
  */
-export const checkSubscriptionStatus = (): boolean => {
-  return localStorage.getItem('isSubscribed') === 'true';
+export const checkSubscriptionStatus = async (): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      console.error('Error checking subscription:', error);
+      return false;
+    }
+
+    // Check if subscription is expired
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error checking subscription:', error);
+    return false;
+  }
 };
 
 /**
@@ -76,4 +128,3 @@ export const recordFreeTrialUsage = (): number => {
 export const resetUsageCount = (): void => {
   localStorage.setItem('usageCount', '0');
 };
-
