@@ -23,7 +23,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
   const [color, setColor] = useState('blue');
   const [canUseFreeTrial, setCanUseFreeTrial] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isSubscribed } = useAuth();
 
   // Check if user has used their free trial
   useEffect(() => {
@@ -43,7 +43,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
     e.preventDefault();
     
     // If user can't generate due to subscription limitations
-    if (!canGenerate || (user && !canUseFreeTrial)) {
+    if (!canGenerate || (user && !canUseFreeTrial && !isSubscribed)) {
       toast({
         title: "Usage limit reached",
         description: "You've used your free character generation. Subscribe to create more!",
@@ -82,7 +82,9 @@ const PromptInput: React.FC<PromptInputProps> = ({
   ];
 
   // Determine if the user can generate based on subscription and free trial
-  const userCanGenerate = canGenerate && (canUseFreeTrial || !user);
+  // Changed this logic to allow input fields to be editable even if canGenerate is false
+  // Only the submission button should be disabled
+  const userCanSubmit = canGenerate && (isSubscribed || canUseFreeTrial || !user);
 
   return (
     <div className="w-full animate-fade-in">
@@ -101,7 +103,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter a name for your character..."
               className="input-focus-ring w-full"
-              disabled={isGenerating || !userCanGenerate}
+              disabled={isGenerating}
             />
           </div>
 
@@ -113,7 +115,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter a detailed description of your character..."
               className="input-focus-ring w-full"
-              disabled={isGenerating || !userCanGenerate}
+              disabled={isGenerating}
             />
           </div>
 
@@ -129,7 +131,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
                     color === colorOption.value ? 'border-white ring-2 ring-primary' : 'border-transparent'
                   }`}
                   style={{ backgroundColor: colorOption.value }}
-                  disabled={isGenerating || !userCanGenerate}
+                  disabled={isGenerating}
                   title={colorOption.name}
                 />
               ))}
@@ -138,10 +140,10 @@ const PromptInput: React.FC<PromptInputProps> = ({
           
           <Button 
             type="submit" 
-            className={`mt-4 clickable ${!userCanGenerate ? 'bg-muted hover:bg-muted' : 'bg-primary text-white hover:bg-primary/90'}`}
-            disabled={isGenerating || !userCanGenerate}
+            className={`mt-4 clickable ${!userCanSubmit ? 'bg-muted hover:bg-muted' : 'bg-primary text-white hover:bg-primary/90'}`}
+            disabled={isGenerating || !userCanSubmit}
           >
-            {!userCanGenerate ? (
+            {!userCanSubmit ? (
               <>
                 <Lock className="h-4 w-4 mr-2" />
                 Upgrade to Generate
