@@ -61,17 +61,19 @@ const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className={`rounded-full p-2 ${isSubscribed ? "border-primary/50 bg-primary/10" : "glass-button"}`}
-            >
-              {isSubscribed ? (
-                <Badge className="h-4 w-4 text-primary" />
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-            </Button>
+            <Link to="/account">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={`rounded-full p-2 ${isSubscribed ? "border-primary/50 bg-primary/10" : "glass-button"}`}
+              >
+                {isSubscribed ? (
+                  <Badge className="h-4 w-4 text-primary" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
+              </Button>
+            </Link>
             <Button variant="outline" size="sm" className="glass-button" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
