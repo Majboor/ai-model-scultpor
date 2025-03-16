@@ -27,6 +27,10 @@ export const createPayment = async (): Promise<PaymentResponse> => {
     // Fixed amount of 5141 (51.41 AED)
     const amount = 5141;
     
+    // Get the current domain for redirection
+    const domain = window.location.origin;
+    const redirectionUrl = `${domain}/payment-redirect`;
+    
     const response = await fetch('https://pay.techrealm.pk/create-payment', {
       method: 'POST',
       headers: {
@@ -34,6 +38,7 @@ export const createPayment = async (): Promise<PaymentResponse> => {
       },
       body: JSON.stringify({
         amount,
+        redirection_url: redirectionUrl
       }),
     });
 
