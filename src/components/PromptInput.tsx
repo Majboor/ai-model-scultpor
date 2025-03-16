@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { hasUsedFreeTrial } from "@/services/paymentAPI";
+import { useAuth } from '@/context/AuthContext';
 
 interface PromptInputProps {
   onGenerate: (name: string, description: string, color: string) => void;
@@ -19,12 +21,29 @@ const PromptInput: React.FC<PromptInputProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('blue');
+  const [canUseFreeTrial, setCanUseFreeTrial] = useState(true);
   const { toast } = useToast();
+  const { user, isSubscribed } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if user has used their free trial
+  useEffect(() => {
+    const checkFreeTrialStatus = async () => {
+      if (user) {
+        const hasUsed = await hasUsedFreeTrial();
+        setCanUseFreeTrial(!hasUsed);
+      } else {
+        setCanUseFreeTrial(true); // Always allow if not logged in (will prompt to login)
+      }
+    };
+    
+    checkFreeTrialStatus();
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!canGenerate) {
+    // If user can't generate due to subscription limitations
+    if (!canGenerate || (user && !canUseFreeTrial && !isSubscribed)) {
       toast({
         title: "Usage limit reached",
         description: "You've used your free character generation. Subscribe to create more!",
@@ -62,6 +81,11 @@ const PromptInput: React.FC<PromptInputProps> = ({
     { name: 'Orange', value: 'orange' },
   ];
 
+  // Determine if the user can generate based on subscription and free trial
+  // Changed this logic to allow input fields to be editable even if canGenerate is false
+  // Only the submission button should be disabled
+  const userCanSubmit = canGenerate && (isSubscribed || canUseFreeTrial || !user);
+
   return (
     <div className="w-full animate-fade-in">
       <div className="rounded-2xl glass-card p-6 mb-6">
@@ -79,7 +103,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter a name for your character..."
               className="input-focus-ring w-full"
-              disabled={isGenerating || !canGenerate}
+              disabled={isGenerating}
             />
           </div>
 
@@ -91,7 +115,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter a detailed description of your character..."
               className="input-focus-ring w-full"
-              disabled={isGenerating || !canGenerate}
+              disabled={isGenerating}
             />
           </div>
 
@@ -107,7 +131,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
                     color === colorOption.value ? 'border-white ring-2 ring-primary' : 'border-transparent'
                   }`}
                   style={{ backgroundColor: colorOption.value }}
-                  disabled={isGenerating || !canGenerate}
+                  disabled={isGenerating}
                   title={colorOption.name}
                 />
               ))}
@@ -116,10 +140,10 @@ const PromptInput: React.FC<PromptInputProps> = ({
           
           <Button 
             type="submit" 
-            className={`mt-4 clickable ${!canGenerate ? 'bg-muted hover:bg-muted' : 'bg-primary text-white hover:bg-primary/90'}`}
-            disabled={isGenerating || !canGenerate}
+            className={`mt-4 clickable ${!userCanSubmit ? 'bg-muted hover:bg-muted' : 'bg-primary text-white hover:bg-primary/90'}`}
+            disabled={isGenerating || !userCanSubmit}
           >
-            {!canGenerate ? (
+            {!userCanSubmit ? (
               <>
                 <Lock className="h-4 w-4 mr-2" />
                 Upgrade to Generate
