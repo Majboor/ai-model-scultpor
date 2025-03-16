@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
 import ModelViewer from '@/components/ModelViewer';
 import ModelGallery, { Model } from '@/components/ModelGallery';
+import PricingSection from '@/components/PricingSection';
+import SubscriptionModal from '@/components/SubscriptionModal';
 import { saveModel, getSampleModels } from '@/utils/modelUtils';
 import { useToast } from "@/hooks/use-toast";
 import { generateCharacterImage, generateCharacterModel, ModelGenerationResponse } from '@/services/characterAPI';
+import { 
+  createPayment, 
+  PaymentResponse, 
+  hasUsedFreeTrial, 
+  recordFreeTrialUsage 
+} from '@/services/paymentAPI';
 import { Sparkles, ArrowRight, Cuboid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
   // State for API steps
@@ -23,8 +33,36 @@ const Index = () => {
   const [viewerUrl, setViewerUrl] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
+  // Usage limit and subscription state
+  const [usageCount, setUsageCount] = useState(0);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  
+  // Authentication context
+  const { user, isSubscribed, checkSubscription } = useAuth();
+
+  // Load saved usage count from localStorage on initial render
+  useEffect(() => {
+    const savedUsageCount = localStorage.getItem('usageCount');
+    if (savedUsageCount) {
+      setUsageCount(parseInt(savedUsageCount, 10));
+    }
+    
+    // Check for subscription in auth context
+    if (user) {
+      checkSubscription();
+    }
+  }, [user, checkSubscription]);
+
   // Step 1: Generate character image
   const handleGenerateImage = async (name: string, description: string, color: string) => {
+    // Check if user has reached the free limit and is not subscribed
+    if (!isSubscribed && hasUsedFreeTrial()) {
+      setIsSubscriptionModalOpen(true);
+      return;
+    }
+    
     setCharacterName(name);
     setCharacterDescription(description);
     setCharacterColor(color);
@@ -33,6 +71,12 @@ const Index = () => {
     try {
       const imageData = await generateCharacterImage(name, description, color);
       setGeneratedImageUrl(imageData.image_url);
+      
+      // Increment usage count for non-subscribed users
+      if (!isSubscribed) {
+        const newCount = recordFreeTrialUsage();
+        setUsageCount(newCount);
+      }
       
       toast({
         title: "Image generated successfully",
@@ -116,9 +160,53 @@ const Index = () => {
     }
   };
 
+  // Handle subscription process
+  const handleSubscribe = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to subscribe.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsProcessingPayment(true);
+    setPaymentLink(null);
+    
+    try {
+      const paymentData = await createPayment();
+      setPaymentLink(paymentData.payment_url);
+      
+      toast({
+        title: "Payment processing",
+        description: "You'll be redirected to complete your subscription payment.",
+      });
+    } catch (error) {
+      toast({
+        title: "Payment processing error",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error processing payment:", error);
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // When user clicks on a Get Started button - scroll to prompt input
+  const scrollToPromptInput = () => {
+    document.getElementById('prompt-input')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // When user clicks on the Pricing button in header - scroll to pricing section
+  const scrollToPricing = () => {
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header onPricingClick={scrollToPricing} />
       
       <main className="page-container">
         {/* Hero Section */}
@@ -140,12 +228,12 @@ const Index = () => {
                     No design skills required!
                   </p>
                   <div className="flex flex-wrap gap-4 pt-2">
-                    <Button size="lg" className="bg-primary text-white hover:bg-primary/90 clickable">
+                    <Button size="lg" className="bg-primary text-white hover:bg-primary/90 clickable" onClick={scrollToPromptInput}>
                       Get Started
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                    <Button size="lg" variant="outline" className="glass-button clickable">
-                      Learn More
+                    <Button size="lg" variant="outline" className="glass-button clickable" onClick={scrollToPricing}>
+                      View Pricing
                     </Button>
                   </div>
                 </div>
@@ -165,10 +253,12 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <PromptInput 
-            onGenerate={handleGenerateImage} 
-            isGenerating={isGeneratingImage || isGeneratingModel} 
-          />
+          <div id="prompt-input">
+            <PromptInput 
+              onGenerate={handleGenerateImage} 
+              isGenerating={isGeneratingImage || isGeneratingModel} 
+            />
+          </div>
           
           <ModelViewer 
             modelUrl={currentModel} 
@@ -185,8 +275,22 @@ const Index = () => {
             models={models} 
             onSelectModel={handleSelectModel} 
           />
+          
+          <PricingSection
+            onSubscribe={() => setIsSubscriptionModalOpen(true)}
+            isProcessing={isProcessingPayment}
+          />
         </div>
       </main>
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        paymentLink={paymentLink}
+        isProcessing={isProcessingPayment}
+        onSubscribe={handleSubscribe}
+      />
     </div>
   );
 };
