@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
@@ -79,6 +80,24 @@ const Index = () => {
     return true;
   };
   
+  // Enhanced function to check usage limits
+  const checkUsageLimit = () => {
+    // If user is subscribed, they have unlimited access
+    if (isSubscribed) return true;
+    
+    // For non-subscribed users, check if they've used their free trial
+    if (hasUsedFreeTrial()) {
+      setIsSubscriptionModalOpen(true);
+      toast({
+        title: "Free trial used",
+        description: "You've used your free character generation. Subscribe to create more!",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
   // Function to handle redirect to login
   const handleRedirectToLogin = () => {
     setIsLoginPromptOpen(false);
@@ -92,9 +111,8 @@ const Index = () => {
       return;
     }
     
-    // Check if user has reached the free limit and is not subscribed
-    if (!isSubscribed && hasUsedFreeTrial()) {
-      setIsSubscriptionModalOpen(true);
+    // Check usage limits
+    if (!checkUsageLimit()) {
       return;
     }
     
@@ -180,6 +198,11 @@ const Index = () => {
       return;
     }
     
+    // Check usage limits for regeneration
+    if (!checkUsageLimit()) {
+      return;
+    }
+    
     // Reset image and model data
     setGeneratedImageUrl(undefined);
     setCurrentModel(undefined);
@@ -254,6 +277,9 @@ const Index = () => {
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Determine if the user can still use the free trial
+  const canUseFreeGeneration = isSubscribed || !hasUsedFreeTrial();
+
   return (
     <div className="min-h-screen bg-background">
       <Header onPricingClick={scrollToPricing} />
@@ -306,8 +332,28 @@ const Index = () => {
           <div id="prompt-input">
             <PromptInput 
               onGenerate={handleGenerateImage} 
-              isGenerating={isGeneratingImage || isGeneratingModel} 
+              isGenerating={isGeneratingImage || isGeneratingModel}
+              canGenerate={canUseFreeGeneration}
             />
+            
+            {!isSubscribed && hasUsedFreeTrial() && (
+              <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Free trial used</h3>
+                    <p className="text-sm text-muted-foreground">Subscribe to create unlimited characters</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsSubscriptionModalOpen(true)}
+                    className="bg-primary text-white hover:bg-primary/90"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Upgrade Now
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           <ModelViewer 
