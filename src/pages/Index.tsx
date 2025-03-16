@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
@@ -18,6 +17,14 @@ import {
 import { Sparkles, ArrowRight, Cuboid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Index = () => {
   // State for API steps
@@ -41,6 +48,10 @@ const Index = () => {
   
   // Authentication context
   const { user, isSubscribed, checkSubscription } = useAuth();
+  const navigate = useNavigate();
+  
+  // Add state for login prompt modal
+  const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
 
   // Load saved usage count from localStorage on initial render
   useEffect(() => {
@@ -55,8 +66,32 @@ const Index = () => {
     }
   }, [user, checkSubscription]);
 
+  // Function to check authentication before performing actions
+  const checkAuthentication = () => {
+    if (!user) {
+      setIsLoginPromptOpen(true);
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to use this feature.",
+      });
+      return false;
+    }
+    return true;
+  };
+  
+  // Function to handle redirect to login
+  const handleRedirectToLogin = () => {
+    setIsLoginPromptOpen(false);
+    navigate('/auth');
+  };
+
   // Step 1: Generate character image
   const handleGenerateImage = async (name: string, description: string, color: string) => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
     // Check if user has reached the free limit and is not subscribed
     if (!isSubscribed && hasUsedFreeTrial()) {
       setIsSubscriptionModalOpen(true);
@@ -96,6 +131,11 @@ const Index = () => {
   
   // Step 2: Generate 3D model from the image
   const handleCreateModel = async () => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
     if (!generatedImageUrl) {
       toast({
         title: "No image available",
@@ -135,6 +175,11 @@ const Index = () => {
   
   // Handle regenerating the image
   const handleRegenerateImage = () => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
     // Reset image and model data
     setGeneratedImageUrl(undefined);
     setCurrentModel(undefined);
@@ -147,6 +192,11 @@ const Index = () => {
   };
   
   const handleSelectModel = (id: string) => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
     const model = models.find(m => m.id === id);
     if (model) {
       setCurrentModel(model.modelUrl);
@@ -163,10 +213,10 @@ const Index = () => {
   // Handle subscription process
   const handleSubscribe = async () => {
     if (!user) {
+      setIsLoginPromptOpen(true);
       toast({
         title: "Authentication Required",
         description: "Please sign in to subscribe.",
-        variant: "destructive",
       });
       return;
     }
@@ -291,6 +341,29 @@ const Index = () => {
         isProcessing={isProcessingPayment}
         onSubscribe={handleSubscribe}
       />
+      
+      {/* Login Prompt Modal */}
+      <Dialog
+        open={isLoginPromptOpen}
+        onOpenChange={setIsLoginPromptOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign In Required</DialogTitle>
+            <DialogDescription>
+              You need to sign in to use this feature.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsLoginPromptOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRedirectToLogin}>
+              Sign In
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
