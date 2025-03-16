@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Download, Settings, Share2, CreditCard, LogIn, LogOut, User } from "lucide-react";
+import { Download, Settings, Share2, CreditCard, LogIn, LogOut, User, Sparkles, Badge } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
+import { Badge as UIBadge } from "@/components/ui/badge";
 
 interface HeaderProps {
   onPricingClick?: () => void;
@@ -22,6 +23,12 @@ const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
         <h1 className="text-2xl font-medium">
           <span className="text-gradient">AI</span> Model Creator
         </h1>
+        {isSubscribed && (
+          <UIBadge variant="default" className="bg-gradient-to-r from-primary to-blue-400 px-2 py-1 ml-2">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Premium
+          </UIBadge>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
@@ -33,9 +40,18 @@ const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
               className={needsSubscription ? "bg-primary text-white hover:bg-primary/90" : "glass-button"}
               onClick={onPricingClick}
             >
-              <CreditCard className="h-4 w-4 mr-2" />
-              {isSubscribed ? "Subscribed" : "Pricing"}
-              {needsSubscription && <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">1/1</span>}
+              {isSubscribed ? (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Premium Active
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pricing
+                  {needsSubscription && <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">1/1</span>}
+                </>
+              )}
             </Button>
             <Button variant="outline" size="sm" className="glass-button">
               <Download className="h-4 w-4 mr-2" />
@@ -45,8 +61,16 @@ const Header: React.FC<HeaderProps> = ({ onPricingClick }) => {
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
-            <Button variant="outline" size="sm" className="glass-button rounded-full p-2">
-              <User className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={`rounded-full p-2 ${isSubscribed ? "border-primary/50 bg-primary/10" : "glass-button"}`}
+            >
+              {isSubscribed ? (
+                <Badge className="h-4 w-4 text-primary" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
             </Button>
             <Button variant="outline" size="sm" className="glass-button" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
