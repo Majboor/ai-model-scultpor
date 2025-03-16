@@ -18,6 +18,14 @@ import {
 import { Sparkles, ArrowRight, Cuboid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Index = () => {
   // State for API steps
@@ -41,6 +49,10 @@ const Index = () => {
   
   // Authentication context
   const { user, isSubscribed, checkSubscription } = useAuth();
+  const navigate = useNavigate();
+  
+  // Add state for login prompt modal
+  const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
 
   // Load saved usage count from localStorage on initial render
   useEffect(() => {
@@ -55,11 +67,52 @@ const Index = () => {
     }
   }, [user, checkSubscription]);
 
+  // Function to check authentication before performing actions
+  const checkAuthentication = () => {
+    if (!user) {
+      setIsLoginPromptOpen(true);
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to use this feature.",
+      });
+      return false;
+    }
+    return true;
+  };
+  
+  // Enhanced function to check usage limits
+  const checkUsageLimit = () => {
+    // If user is subscribed, they have unlimited access
+    if (isSubscribed) return true;
+    
+    // For non-subscribed users, check if they've used their free trial
+    if (hasUsedFreeTrial()) {
+      setIsSubscriptionModalOpen(true);
+      toast({
+        title: "Free trial used",
+        description: "You've used your free character generation. Subscribe to create more!",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  // Function to handle redirect to login
+  const handleRedirectToLogin = () => {
+    setIsLoginPromptOpen(false);
+    navigate('/auth');
+  };
+
   // Step 1: Generate character image
   const handleGenerateImage = async (name: string, description: string, color: string) => {
-    // Check if user has reached the free limit and is not subscribed
-    if (!isSubscribed && hasUsedFreeTrial()) {
-      setIsSubscriptionModalOpen(true);
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
+    // Check usage limits
+    if (!checkUsageLimit()) {
       return;
     }
     
@@ -96,6 +149,11 @@ const Index = () => {
   
   // Step 2: Generate 3D model from the image
   const handleCreateModel = async () => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
     if (!generatedImageUrl) {
       toast({
         title: "No image available",
@@ -135,6 +193,16 @@ const Index = () => {
   
   // Handle regenerating the image
   const handleRegenerateImage = () => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
+    // Check usage limits for regeneration
+    if (!checkUsageLimit()) {
+      return;
+    }
+    
     // Reset image and model data
     setGeneratedImageUrl(undefined);
     setCurrentModel(undefined);
@@ -147,6 +215,11 @@ const Index = () => {
   };
   
   const handleSelectModel = (id: string) => {
+    // Check if user is authenticated
+    if (!checkAuthentication()) {
+      return;
+    }
+    
     const model = models.find(m => m.id === id);
     if (model) {
       setCurrentModel(model.modelUrl);
@@ -163,10 +236,10 @@ const Index = () => {
   // Handle subscription process
   const handleSubscribe = async () => {
     if (!user) {
+      setIsLoginPromptOpen(true);
       toast({
         title: "Authentication Required",
         description: "Please sign in to subscribe.",
-        variant: "destructive",
       });
       return;
     }
@@ -203,6 +276,9 @@ const Index = () => {
   const scrollToPricing = () => {
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Determine if the user can still use the free trial
+  const canUseFreeGeneration = isSubscribed || !hasUsedFreeTrial();
 
   return (
     <div className="min-h-screen bg-background">
@@ -256,8 +332,28 @@ const Index = () => {
           <div id="prompt-input">
             <PromptInput 
               onGenerate={handleGenerateImage} 
-              isGenerating={isGeneratingImage || isGeneratingModel} 
+              isGenerating={isGeneratingImage || isGeneratingModel}
+              canGenerate={canUseFreeGeneration}
             />
+            
+            {!isSubscribed && hasUsedFreeTrial() && (
+              <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Free trial used</h3>
+                    <p className="text-sm text-muted-foreground">Subscribe to create unlimited characters</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsSubscriptionModalOpen(true)}
+                    className="bg-primary text-white hover:bg-primary/90"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Upgrade Now
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           <ModelViewer 
@@ -291,6 +387,29 @@ const Index = () => {
         isProcessing={isProcessingPayment}
         onSubscribe={handleSubscribe}
       />
+      
+      {/* Login Prompt Modal */}
+      <Dialog
+        open={isLoginPromptOpen}
+        onOpenChange={setIsLoginPromptOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign In Required</DialogTitle>
+            <DialogDescription>
+              You need to sign in to use this feature.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsLoginPromptOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRedirectToLogin}>
+              Sign In
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

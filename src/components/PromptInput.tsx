@@ -2,15 +2,20 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PromptInputProps {
   onGenerate: (name: string, description: string, color: string) => void;
   isGenerating: boolean;
+  canGenerate?: boolean; // New prop to control if generation is allowed
 }
 
-const PromptInput: React.FC<PromptInputProps> = ({ onGenerate, isGenerating }) => {
+const PromptInput: React.FC<PromptInputProps> = ({ 
+  onGenerate, 
+  isGenerating,
+  canGenerate = true // Default to true if not specified
+}) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('blue');
@@ -18,6 +23,15 @@ const PromptInput: React.FC<PromptInputProps> = ({ onGenerate, isGenerating }) =
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!canGenerate) {
+      toast({
+        title: "Usage limit reached",
+        description: "You've used your free character generation. Subscribe to create more!",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!description.trim()) {
       toast({
@@ -65,7 +79,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ onGenerate, isGenerating }) =
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter a name for your character..."
               className="input-focus-ring w-full"
-              disabled={isGenerating}
+              disabled={isGenerating || !canGenerate}
             />
           </div>
 
@@ -77,7 +91,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ onGenerate, isGenerating }) =
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter a detailed description of your character..."
               className="input-focus-ring w-full"
-              disabled={isGenerating}
+              disabled={isGenerating || !canGenerate}
             />
           </div>
 
@@ -93,7 +107,7 @@ const PromptInput: React.FC<PromptInputProps> = ({ onGenerate, isGenerating }) =
                     color === colorOption.value ? 'border-white ring-2 ring-primary' : 'border-transparent'
                   }`}
                   style={{ backgroundColor: colorOption.value }}
-                  disabled={isGenerating}
+                  disabled={isGenerating || !canGenerate}
                   title={colorOption.name}
                 />
               ))}
@@ -102,11 +116,20 @@ const PromptInput: React.FC<PromptInputProps> = ({ onGenerate, isGenerating }) =
           
           <Button 
             type="submit" 
-            className="mt-4 clickable bg-primary text-white hover:bg-primary/90"
-            disabled={isGenerating}
+            className={`mt-4 clickable ${!canGenerate ? 'bg-muted hover:bg-muted' : 'bg-primary text-white hover:bg-primary/90'}`}
+            disabled={isGenerating || !canGenerate}
           >
-            <Sparkles className="h-4 w-4 mr-2" />
-            {isGenerating ? "Generating..." : "Generate Character"}
+            {!canGenerate ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Upgrade to Generate
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {isGenerating ? "Generating..." : "Generate Character"}
+              </>
+            )}
           </Button>
         </form>
         
