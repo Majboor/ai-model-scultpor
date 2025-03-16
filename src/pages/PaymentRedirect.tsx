@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verifyPayment } from '@/services/paymentAPI';
@@ -9,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 const PaymentRedirect = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
+  const [isTestMode, setIsTestMode] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,6 +24,7 @@ const PaymentRedirect = () => {
         const testParam = params.get('test');
         
         if (testParam === 'true') {
+          setIsTestMode(true);
           setIsSuccess(true);
           setIsProcessing(false);
           
@@ -105,17 +108,17 @@ const PaymentRedirect = () => {
         ) : isSuccess ? (
           <div className="flex flex-col items-center justify-center gap-4">
             <div className="text-green-500 animate-bounce-once">
-              {location.search.includes('test=true') ? (
+              {isTestMode ? (
                 <Beaker className="h-16 w-16" />
               ) : (
                 <CheckCircle className="h-16 w-16" />
               )}
             </div>
             <h1 className="text-2xl font-bold">
-              {location.search.includes('test=true') ? 'Test Subscription Activated' : 'Payment Successful'}
+              {isTestMode ? 'Test Subscription Activated' : 'Payment Successful'}
             </h1>
             <div className="text-muted-foreground">
-              {location.search.includes('test=true') ? (
+              {isTestMode ? (
                 <p>Your test subscription has been activated. You now have access to all premium features for 30 days.</p>
               ) : (
                 <p>Your subscription has been activated. You now have unlimited access to all premium features.</p>

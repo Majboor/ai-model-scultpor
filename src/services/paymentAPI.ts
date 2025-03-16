@@ -91,22 +91,53 @@ export const createTestSubscription = async (): Promise<boolean> => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     
-    // Insert or update subscription record
-    const { error } = await supabase
+    // Check if user already has a subscription
+    const { data: existingSubscription, error: fetchError } = await supabase
       .from('subscriptions')
-      .upsert({
-        user_id: user.id,
-        is_active: true,
-        payment_reference: 'TEST-' + Date.now(),
-        amount: 0, // $0 for test
-        status: 'test',
-        expires_at: expiresAt.toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-    if (error) {
-      console.error('Error creating test subscription:', error);
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (fetchError) {
+      console.error('Error checking existing subscription:', fetchError);
       return false;
+    }
+    
+    // If user already has a subscription, update it instead of creating a new one
+    if (existingSubscription) {
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          is_active: true,
+          payment_reference: 'TEST-' + Date.now(),
+          status: 'test',
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      if (updateError) {
+        console.error('Error updating test subscription:', updateError);
+        return false;
+      }
+    } else {
+      // Insert new subscription record if one doesn't exist
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          is_active: true,
+          payment_reference: 'TEST-' + Date.now(),
+          amount: 0, // $0 for test
+          status: 'test',
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        console.error('Error creating test subscription:', insertError);
+        return false;
+      }
     }
     
     // Update local storage to reflect subscription status
