@@ -75,6 +75,51 @@ export const verifyPayment = async (paymentUrl: string, userId: string): Promise
 };
 
 /**
+ * Create a test subscription (no payment required)
+ * For testing purposes only
+ */
+export const createTestSubscription = async (): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('No user found');
+      return false;
+    }
+    
+    // Calculate subscription expiry (30 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    
+    // Insert or update subscription record
+    const { error } = await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: user.id,
+        is_active: true,
+        payment_reference: 'TEST-' + Date.now(),
+        amount: 0, // $0 for test
+        status: 'test',
+        expires_at: expiresAt.toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error creating test subscription:', error);
+      return false;
+    }
+    
+    // Update local storage to reflect subscription status
+    localStorage.setItem('isSubscribed', 'true');
+    
+    return true;
+  } catch (error) {
+    console.error('Error in createTestSubscription:', error);
+    return false;
+  }
+};
+
+/**
  * Check if the user has a subscription
  */
 export const checkSubscriptionStatus = async (): Promise<boolean> => {

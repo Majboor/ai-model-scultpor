@@ -9,10 +9,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Sparkles, LogIn } from "lucide-react";
+import { ExternalLink, Sparkles, LogIn, Beaker } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
+import { createTestSubscription } from "@/services/paymentAPI";
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -29,9 +30,48 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   isProcessing,
   onSubscribe
 }) => {
-  const { user, isSubscribed } = useAuth();
+  const { user, isSubscribed, checkSubscription } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isTestProcessing, setIsTestProcessing] = useState(false);
+
+  const handleTestSubscription = async () => {
+    if (!user) return;
+    
+    setIsTestProcessing(true);
+    try {
+      const success = await createTestSubscription();
+      
+      if (success) {
+        // Refresh subscription status
+        await checkSubscription();
+        
+        toast({
+          title: "Test subscription activated",
+          description: "You now have full access for 30 days!",
+        });
+        
+        // Close modal and redirect to success page
+        onClose();
+        navigate('/payment-redirect?success=true&test=true');
+      } else {
+        toast({
+          title: "Error activating test subscription",
+          description: "There was a problem activating your test subscription.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Test subscription error:", error);
+      toast({
+        title: "Error activating test subscription",
+        description: "There was an unexpected error. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestProcessing(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -71,7 +111,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </ul>
         </div>
         
-        <DialogFooter className="sm:justify-start">
+        <DialogFooter className="sm:justify-start flex flex-col gap-2">
           {!user ? (
             <div className="w-full">
               <Button 
@@ -89,7 +129,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </p>
             </div>
           ) : paymentLink ? (
-            <div className="w-full">
+            <div className="w-full space-y-2">
               <Button 
                 className="w-full mb-2" 
                 onClick={() => window.open(paymentLink, '_blank')}
@@ -97,18 +137,41 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 Proceed to Payment
                 <ExternalLink className="ml-2 h-4 w-4" />
               </Button>
+              
+              <Button 
+                variant="outline"
+                className="w-full mb-2" 
+                onClick={handleTestSubscription}
+                disabled={isTestProcessing}
+              >
+                <Beaker className="mr-2 h-4 w-4 text-amber-500" />
+                Test Subscription (No Payment)
+              </Button>
+              
               <p className="text-xs text-center text-muted-foreground">
                 You'll be redirected to our secure payment processor
               </p>
             </div>
           ) : (
-            <Button 
-              className="w-full" 
-              onClick={onSubscribe}
-              disabled={isProcessing}
-            >
-              {isProcessing ? "Processing..." : "Subscribe for $14/month"}
-            </Button>
+            <div className="w-full space-y-2">
+              <Button 
+                className="w-full" 
+                onClick={onSubscribe}
+                disabled={isProcessing}
+              >
+                {isProcessing ? "Processing..." : "Subscribe for $14/month"}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                className="w-full" 
+                onClick={handleTestSubscription}
+                disabled={isTestProcessing}
+              >
+                <Beaker className="mr-2 h-4 w-4 text-amber-500" />
+                Test Subscription (No Payment)
+              </Button>
+            </div>
           )}
         </DialogFooter>
       </DialogContent>

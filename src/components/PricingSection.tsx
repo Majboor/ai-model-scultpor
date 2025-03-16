@@ -1,8 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Sparkles, Beaker } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/context/AuthContext';
+import { createTestSubscription } from "@/services/paymentAPI";
 
 interface PricingProps {
   onSubscribe: () => void;
@@ -10,6 +13,55 @@ interface PricingProps {
 }
 
 const PricingSection: React.FC<PricingProps> = ({ onSubscribe, isProcessing }) => {
+  const { user, checkSubscription } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isTestProcessing, setIsTestProcessing] = useState(false);
+
+  const handleTestSubscription = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to use this feature.",
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    setIsTestProcessing(true);
+    try {
+      const success = await createTestSubscription();
+      
+      if (success) {
+        // Refresh subscription status
+        await checkSubscription();
+        
+        toast({
+          title: "Test subscription activated",
+          description: "You now have full access for 30 days!",
+        });
+        
+        // Redirect to success page
+        navigate('/payment-redirect?success=true&test=true');
+      } else {
+        toast({
+          title: "Error activating test subscription",
+          description: "There was a problem activating your test subscription.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Test subscription error:", error);
+      toast({
+        title: "Error activating test subscription",
+        description: "There was an unexpected error. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestProcessing(false);
+    }
+  };
+
   return (
     <div id="pricing" className="w-full py-12 scroll-mt-20 animate-fade-in">
       <div className="text-center mb-10">
@@ -86,13 +138,27 @@ const PricingSection: React.FC<PricingProps> = ({ onSubscribe, isProcessing }) =
             </div>
           </div>
           
-          <Button 
-            className="w-full bg-primary text-white hover:bg-primary/90"
-            onClick={onSubscribe}
-            disabled={isProcessing}
-          >
-            {isProcessing ? "Processing..." : "Subscribe Now"}
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              className="w-full bg-primary text-white hover:bg-primary/90"
+              onClick={onSubscribe}
+              disabled={isProcessing}
+            >
+              {isProcessing ? "Processing..." : "Subscribe Now"}
+            </Button>
+            
+            {user && (
+              <Button 
+                variant="outline"
+                className="w-full"
+                onClick={handleTestSubscription}
+                disabled={isTestProcessing}
+              >
+                <Beaker className="mr-2 h-4 w-4 text-amber-500" />
+                {isTestProcessing ? "Processing..." : "Test Subscription (No Payment)"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
