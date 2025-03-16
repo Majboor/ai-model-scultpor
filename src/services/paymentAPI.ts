@@ -112,24 +112,144 @@ export const checkSubscriptionStatus = async (): Promise<boolean> => {
 /**
  * Check if the user has used their free trial
  */
-export const hasUsedFreeTrial = (): boolean => {
-  return localStorage.getItem('usageCount') !== null && 
-         parseInt(localStorage.getItem('usageCount') || '0', 10) >= 1;
+export const hasUsedFreeTrial = async (): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // If user is not logged in, fallback to localStorage
+      return localStorage.getItem('usageCount') !== null && 
+             parseInt(localStorage.getItem('usageCount') || '0', 10) >= 1;
+    }
+
+    // Check if user has a subscription record with free_trial_used flag
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('free_trial_used')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No subscription record found, user hasn't used free trial
+        return false;
+      }
+      console.error('Error checking free trial status:', error);
+      // Fallback to localStorage if there's an error
+      return localStorage.getItem('usageCount') !== null && 
+             parseInt(localStorage.getItem('usageCount') || '0', 10) >= 1;
+    }
+    
+    return data.free_trial_used;
+  } catch (error) {
+    console.error('Error in hasUsedFreeTrial:', error);
+    // Fallback to localStorage if there's an error
+    return localStorage.getItem('usageCount') !== null && 
+           parseInt(localStorage.getItem('usageCount') || '0', 10) >= 1;
+  }
 };
 
 /**
  * Record that the user has used their free trial
  */
-export const recordFreeTrialUsage = (): number => {
-  const currentUsage = parseInt(localStorage.getItem('usageCount') || '0', 10);
-  const newUsage = currentUsage + 1;
-  localStorage.setItem('usageCount', newUsage.toString());
-  return newUsage;
+export const recordFreeTrialUsage = async (): Promise<number> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // If user is not logged in, fallback to localStorage
+      const currentUsage = parseInt(localStorage.getItem('usageCount') || '0', 10);
+      const newUsage = currentUsage + 1;
+      localStorage.setItem('usageCount', newUsage.toString());
+      return newUsage;
+    }
+    
+    // Check if user already has a subscription record
+    const { data: existingSubscription, error: fetchError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking subscription record:', fetchError);
+      // Fallback to localStorage if there's an error
+      const currentUsage = parseInt(localStorage.getItem('usageCount') || '0', 10);
+      const newUsage = currentUsage + 1;
+      localStorage.setItem('usageCount', newUsage.toString());
+      return newUsage;
+    }
+    
+    if (existingSubscription) {
+      // Update existing subscription record
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({ 
+          free_trial_used: true,
+          presentations_generated: existingSubscription.presentations_generated + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      if (updateError) {
+        console.error('Error updating subscription record:', updateError);
+      }
+      
+      return existingSubscription.presentations_generated + 1;
+    } else {
+      // Create new subscription record
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          free_trial_used: true,
+          presentations_generated: 1,
+          is_active: false,
+          status: 'free'
+        });
+      
+      if (insertError) {
+        console.error('Error creating subscription record:', insertError);
+      }
+      
+      return 1;
+    }
+  } catch (error) {
+    console.error('Error in recordFreeTrialUsage:', error);
+    // Fallback to localStorage if there's an error
+    const currentUsage = parseInt(localStorage.getItem('usageCount') || '0', 10);
+    const newUsage = currentUsage + 1;
+    localStorage.setItem('usageCount', newUsage.toString());
+    return newUsage;
+  }
 };
 
 /**
  * Reset usage count (for testing)
  */
-export const resetUsageCount = (): void => {
-  localStorage.setItem('usageCount', '0');
+export const resetUsageCount = async (): Promise<void> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ 
+          free_trial_used: false,
+          presentations_generated: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Error resetting subscription usage:', error);
+      }
+    }
+    
+    // Always clear localStorage as a fallback
+    localStorage.removeItem('usageCount');
+  } catch (error) {
+    console.error('Error in resetUsageCount:', error);
+    localStorage.removeItem('usageCount');
+  }
 };

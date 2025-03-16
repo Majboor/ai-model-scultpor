@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PromptInput from '@/components/PromptInput';
@@ -42,7 +41,7 @@ const Index = () => {
   const { toast } = useToast();
 
   // Usage limit and subscription state
-  const [usageCount, setUsageCount] = useState(0);
+  const [hasUsedFreeGeneration, setHasUsedFreeGeneration] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
@@ -54,17 +53,24 @@ const Index = () => {
   // Add state for login prompt modal
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
 
-  // Load saved usage count from localStorage on initial render
+  // Check free trial status when user changes
   useEffect(() => {
-    const savedUsageCount = localStorage.getItem('usageCount');
-    if (savedUsageCount) {
-      setUsageCount(parseInt(savedUsageCount, 10));
-    }
+    const checkFreeTrialStatus = async () => {
+      if (user) {
+        const trialUsed = await hasUsedFreeTrial();
+        setHasUsedFreeGeneration(trialUsed);
+      } else {
+        // Reset state when not logged in
+        setHasUsedFreeGeneration(false);
+      }
+      
+      // Check for subscription in auth context
+      if (user) {
+        checkSubscription();
+      }
+    };
     
-    // Check for subscription in auth context
-    if (user) {
-      checkSubscription();
-    }
+    checkFreeTrialStatus();
   }, [user, checkSubscription]);
 
   // Function to check authentication before performing actions
@@ -81,18 +87,22 @@ const Index = () => {
   };
   
   // Enhanced function to check usage limits
-  const checkUsageLimit = () => {
+  const checkUsageLimit = async () => {
     // If user is subscribed, they have unlimited access
     if (isSubscribed) return true;
     
-    // For non-subscribed users, check if they've used their free trial
-    if (hasUsedFreeTrial()) {
-      setIsSubscriptionModalOpen(true);
-      toast({
-        title: "Free trial used",
-        description: "You've used your free character generation. Subscribe to create more!",
-      });
-      return false;
+    // For non-subscribed logged-in users, check if they've used their free trial
+    if (user) {
+      const trialUsed = await hasUsedFreeTrial();
+      
+      if (trialUsed) {
+        setIsSubscriptionModalOpen(true);
+        toast({
+          title: "Free trial used",
+          description: "You've used your free character generation. Subscribe to create more!",
+        });
+        return false;
+      }
     }
     
     return true;
@@ -112,7 +122,7 @@ const Index = () => {
     }
     
     // Check usage limits
-    if (!checkUsageLimit()) {
+    if (!await checkUsageLimit()) {
       return;
     }
     
@@ -127,8 +137,8 @@ const Index = () => {
       
       // Increment usage count for non-subscribed users
       if (!isSubscribed) {
-        const newCount = recordFreeTrialUsage();
-        setUsageCount(newCount);
+        await recordFreeTrialUsage();
+        setHasUsedFreeGeneration(true);
       }
       
       toast({
@@ -278,7 +288,7 @@ const Index = () => {
   };
 
   // Determine if the user can still use the free trial
-  const canUseFreeGeneration = isSubscribed || !hasUsedFreeTrial();
+  const canUseFreeGeneration = isSubscribed || (!user || !hasUsedFreeGeneration);
 
   return (
     <div className="min-h-screen bg-background">
@@ -336,7 +346,7 @@ const Index = () => {
               canGenerate={canUseFreeGeneration}
             />
             
-            {!isSubscribed && hasUsedFreeTrial() && (
+            {user && !isSubscribed && hasUsedFreeGeneration && (
               <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
